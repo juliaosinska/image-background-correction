@@ -2,7 +2,7 @@ import numpy as np
 
 # WŁASNE: from previous tasks - image filtering
 # GENAI: Claude – adaptation of my task-3 Gaussian code to 2D grayscale arrays (no uint8 rounding between passes)
-# WŁASNE: adaptated to current task: added size parameter to get_separable_gaussian_kernel() 
+# WŁASNE: adapted to current task: added size parameter to get_separable_gaussian_kernel() 
 #           and gaussian_filter() to allow for different kernel sizes
 
 def get_separable_gaussian_kernel(sigma=1.0, size=3):

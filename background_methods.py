@@ -82,13 +82,49 @@ def tophat_background(image: np.ndarray, se_shape: str, se_size: int):
 
     return B, R
 
+# ------------------------
+# corner sampling background estimation
+# ------------------------
 
+# WŁASNE: define bilinear interpolation for corner background estimation
+def bilinear_interpolation(height, width, v_00, v_10, v_01, v_11):
+    B = np.zeros((height, width), dtype=np.float64)
+
+    for i in range(height):
+        for j in range(width):
+            u = j / (width - 1)
+            v = i / (height - 1)
+
+            B[i, j] = (1 - u)*(1 - v)*v_00 + u*(1 - v)*v_10 + (1 - u)*v*v_01 + u*v*v_11
+
+    return B
+
+# WŁASNE: define corner background estimation using bilinear interpolation of the four corners
 def corner_background(image: np.ndarray, corner_size: int, sigma: float):
-    """Method 3: background from 4 corner samples + bilinear interpolation.
+    height, width = image.shape
 
-    corner_size: side of the square measuring area in each corner
-    sigma:       Gaussian blur for the second variant
+    # GENAI: Claude – fix of corner-to-v_uv mapping (slicing order in numpy)
+    # numpy indexing is [row, column] = [v, u]:  rows  :s -> top,   -s: -> bottom
+    #                                            cols  :s -> left,  -s: -> right
+    # v_00: u=0, v=0 -> left-top corner
+    v_00 = np.mean(image[ :corner_size, :corner_size])
+    # v_10: u=1, v=0 -> right-top corner
+    v_10 = np.mean(image[ :corner_size, -corner_size:])
+    # v_01: u=0, v=1 -> left-bottom corner
+    v_01 = np.mean(image[-corner_size: , :corner_size])
+    # v_11: u=1, v=1 -> right-bottom corner
+    v_11 = np.mean(image[-corner_size: , -corner_size:])
 
-    Returns (B, R1, R2):  R1 = I - B,  R2 = G_sigma(I) - B
-    """
-    raise NotImplementedError("corner_background")
+    B = bilinear_interpolation(height, width, v_00, v_10, v_01, v_11)
+    R_1 = image - B
+
+    radius = int(np.ceil(3 * sigma))
+    size = 2 * radius + 1
+    R_2 = gaussian_filter(image.astype(np.float64), sigma=sigma, size=size) - B
+
+    return B, R_1, R_2
+
+
+
+
+
